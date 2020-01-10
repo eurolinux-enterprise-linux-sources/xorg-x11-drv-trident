@@ -5,7 +5,7 @@
 Summary:    Xorg X11 trident video driver
 Name:       xorg-x11-drv-trident
 Version:    1.3.6
-Release:    10%{?dist}
+Release:    11%{?dist}
 URL:        http://www.x.org
 License:    MIT
 Group:      User Interface/X Hardware Support
@@ -54,6 +54,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man4/trident.4*
 
 %changelog
+* Wed Nov 11 2015 Adam Jackson <ajax@redhat.com> - 1.3.6-11
+- Rebuild for server 1.17
+
 * Mon Apr 28 2014 Adam Jackson <ajax@redhat.com> - 1.3.6-10
 - Fix rhel arch list
 
