@@ -4,8 +4,8 @@
 
 Summary:    Xorg X11 trident video driver
 Name:       xorg-x11-drv-trident
-Version:    1.3.4
-Release:    1%{?dist}
+Version:    1.3.6
+Release:    4%{?dist}
 URL:        http://www.x.org
 License:    MIT
 Group:      User Interface/X Hardware Support
@@ -13,10 +13,11 @@ BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Source0:    ftp://ftp.x.org/pub/individual/driver/%{tarball}-%{version}.tar.bz2
 Source1:    trident.xinf
+Patch0:	    trident-1.3.6-no-xaa.patch
 
 ExcludeArch: s390 s390x
 
-BuildRequires: xorg-x11-server-sdk >= 1.3.0.0-6
+BuildRequires: xorg-x11-server-sdk >= 1.13.0
 
 Requires:  hwdata
 Requires:  Xorg %(xserver-sdk-abi-requires ansic)
@@ -27,6 +28,7 @@ X.Org X11 trident video driver.
 
 %prep
 %setup -q -n %{tarball}-%{version}
+%patch0 -p1 -b .no-xaa
 
 %build
 %configure --disable-static
@@ -54,6 +56,15 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man4/trident.4*
 
 %changelog
+* Thu Dec 20 2012 Adam Jackson <ajax@redhat.com> 1.3.6-4
+- trident-1.3.6-no-xaa.patch: Fix crash on init. (#889124)
+
+* Wed Aug 22 2012 airlied@redhat.com - 1.3.6-2
+- rebuild for server ABI requires
+
+* Wed Aug 08 2012 Ben Skeggs <bskeggs@redhat.com> 1.3.6-1
+- upstream release 1.3.6 (rebase for 6.4)
+
 * Tue Jun 28 2011 Ben Skeggs <bskeggs@redhat.com> 1.3.4-1
 - upstream release 1.3.4
 

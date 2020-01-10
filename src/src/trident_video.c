@@ -29,7 +29,6 @@
 #include "xf86.h"
 #include "xf86_OSproc.h"
 #include "compiler.h"
-#include "xf86PciInfo.h"
 #include "xf86Pci.h"
 #include "xf86fbman.h"
 #include "regionstr.h"
@@ -37,8 +36,6 @@
 #include "trident.h"
 #include "trident_regs.h"
 #include <X11/extensions/Xv.h>
-#include "xaa.h"
-#include "xaalocal.h"
 #include "dixstruct.h"
 #include "fourcc.h"
 
@@ -77,7 +74,7 @@ static Atom xvColorKey, xvSaturation, xvBrightness, xvHUE,  xvContrast;
 
 void TRIDENTInitVideo(ScreenPtr pScreen)
 {
-    ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     XF86VideoAdaptorPtr *adaptors, *newAdaptors = NULL;
     XF86VideoAdaptorPtr newAdaptor = NULL;
     TRIDENTPtr pTrident = TRIDENTPTR(pScrn);
@@ -125,7 +122,7 @@ void TRIDENTInitVideo(ScreenPtr pScreen)
 	    adaptors = &newAdaptor;
 	} else {
 	    newAdaptors =  /* need to free this someplace */
-		xalloc((num_adaptors + 1) * sizeof(XF86VideoAdaptorPtr*));
+		malloc((num_adaptors + 1) * sizeof(XF86VideoAdaptorPtr*));
 	    if(newAdaptors) {
 		memcpy(newAdaptors, adaptors, num_adaptors * 
 					sizeof(XF86VideoAdaptorPtr));
@@ -140,7 +137,7 @@ void TRIDENTInitVideo(ScreenPtr pScreen)
         xf86XVScreenInit(pScreen, adaptors, num_adaptors);
 
     if(newAdaptors)
-	xfree(newAdaptors);
+	free(newAdaptors);
 
     if (pTrident->videoFlags)
 	xf86DrvMsgVerb(pScrn->scrnIndex,X_INFO,3,
@@ -316,12 +313,12 @@ void TRIDENTResetVideo(ScrnInfoPtr pScrn)
 static XF86VideoAdaptorPtr 
 TRIDENTSetupImageVideo(ScreenPtr pScreen)
 {
-    ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     TRIDENTPtr pTrident = TRIDENTPTR(pScrn);
     XF86VideoAdaptorPtr adapt;
     TRIDENTPortPrivPtr pPriv;
 
-    if(!(adapt = xcalloc(1, sizeof(XF86VideoAdaptorRec) +
+    if(!(adapt = calloc(1, sizeof(XF86VideoAdaptorRec) +
 			    sizeof(TRIDENTPortPrivRec) +
 			    sizeof(DevUnion))))
 	return NULL;
@@ -586,7 +583,7 @@ TRIDENTAllocateMemory(
 	xf86FreeOffscreenLinear(linear);
    }
 
-   pScreen = screenInfo.screens[pScrn->scrnIndex];
+   pScreen = xf86ScrnToScreen(pScrn);
 
    new_linear = xf86AllocateOffscreenLinear(pScreen, size, 16, 
    						NULL, NULL, NULL);
@@ -978,18 +975,18 @@ TRIDENTAllocateSurface(
     surface->width = w;
     surface->height = h;
 
-    if(!(surface->pitches = xalloc(sizeof(int)))) {
+    if(!(surface->pitches = malloc(sizeof(int)))) {
 	xf86FreeOffscreenLinear(linear);
 	return BadAlloc;
     }
-    if(!(surface->offsets = xalloc(sizeof(int)))) {
-	xfree(surface->pitches);
+    if(!(surface->offsets = malloc(sizeof(int)))) {
+	free(surface->pitches);
 	xf86FreeOffscreenLinear(linear);
 	return BadAlloc;
     }
-    if(!(pPriv = xalloc(sizeof(OffscreenPrivRec)))) {
-	xfree(surface->pitches);
-	xfree(surface->offsets);
+    if(!(pPriv = malloc(sizeof(OffscreenPrivRec)))) {
+	free(surface->pitches);
+	free(surface->offsets);
 	xf86FreeOffscreenLinear(linear);
 	return BadAlloc;
     }
@@ -1034,9 +1031,9 @@ TRIDENTFreeSurface(
     if(pPriv->isOn)
 	TRIDENTStopSurface(surface);
     xf86FreeOffscreenLinear(pPriv->linear);
-    xfree(surface->pitches);
-    xfree(surface->offsets);
-    xfree(surface->devPrivate.ptr);
+    free(surface->pitches);
+    free(surface->offsets);
+    free(surface->devPrivate.ptr);
 
     return Success;
 }
@@ -1123,12 +1120,12 @@ TRIDENTDisplaySurface(
 static void 
 TRIDENTInitOffscreenImages(ScreenPtr pScreen)
 {
-    ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     TRIDENTPtr pTrident = TRIDENTPTR(pScrn);
     XF86OffscreenImagePtr offscreenImages;
 
     /* need to free this someplace */
-    if(!(offscreenImages = xalloc(sizeof(XF86OffscreenImageRec))))
+    if(!(offscreenImages = malloc(sizeof(XF86OffscreenImageRec))))
 	return;
 
     offscreenImages[0].image = &Images[0];
@@ -1342,7 +1339,10 @@ WaitForVBlank(ScrnInfoPtr pScrn)
      * full vblank has passed. 
      * - Alan.
      */
-    if (!xf86IsPc98()) {
+#if GET_ABI_MAJOR(ABI_VIDEODRV_VERSION) < 12
+    if (!xf86IsPc98())
+#endif
+    {
        WAITFORVSYNC;
        WAITFORVSYNC;
     }
